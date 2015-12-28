@@ -34,7 +34,7 @@
 
 	/*! \brief libμdaemon status result
 		This struct contains various bits of information
-		that are relevant to the running daemon process.
+	that are relevant to the running daemon process.
 	*/
 	typedef struct deamon_status {
 		int pid;	/*!< The daemons PID */
@@ -42,9 +42,9 @@
 		int ppid;	/*!< The parent PID */
 	} lud_status;
 
-	static linkage int lud_daemonize(lud_opt* dopt);
-	static linkage void lud_cleanup();
-	static linkage char* lud_strerror(int lud_errno);
-	static linkage lud_status* lud_querystatus(void);
+	linkage int lud_daemonize(lud_opt* dopt);
+	linkage void lud_cleanup();
+	linkage char* lud_strerror(int lud_errno);
+	linkage lud_status* lud_querystatus(void);
 
 #endif /* _udaemon_h_ */

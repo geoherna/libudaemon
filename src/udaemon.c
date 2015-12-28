@@ -10,12 +10,13 @@
 #include <errno.h>
 #include <pwd.h>
 #include <string.h>
+#include <syslog.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 
 static int _udaemonlockfd = 0;
 static lud_opt* _dopt = NULL;
-static lud_status _ludstatus = NULL;
+static lud_status* _ludstatus = NULL;
 
 
 static void _udaemonsighndl(int sig) {
@@ -23,8 +24,7 @@ static void _udaemonsighndl(int sig) {
 
 	}
 }
-
-static int lud_daemonize(lud_opt* dopt) {
+int lud_daemonize(lud_opt* dopt) {
 	if((_dopt = dopt) == NULL) return EUDNOOPT;
 
 	pid_t pid, sid, parent;
@@ -33,15 +33,14 @@ static int lud_daemonize(lud_opt* dopt) {
 		openlog(_dopt->name, LOG_PID, LOG_LOCAL5);
 	// Already Daemonized
 	if(getppid() == 1) return EUDNOERR;
-	if(_dopt->use_lock)
-		if(_dopt->lockfile && _dopt->lockfile[0]) {
-			_udaemonlockfd = open(_dopt->lockfile, O_RDWR | O_CREAT, 0640);
-			if(_udaemonlockfd < 0) {
-				if(_dopt->use_syslog)
-					closelog();
-				return EUDNOLOCK;
-			}
+	if(_dopt->lockfile && _dopt->lockfile[0]) {
+		_udaemonlockfd = open(_dopt->lockfile, O_RDWR | O_CREAT, 0640);
+		if(_udaemonlockfd < 0) {
+			if(_dopt->use_syslog)
+				closelog();
+			return EUDNOLOCK;
 		}
+	}
 
 
 	// Setup the initial status
@@ -50,19 +49,19 @@ static int lud_daemonize(lud_opt* dopt) {
 	kill(parent, SIGUSR1);
 }
 
-static void lud_cleanup() {
+void lud_cleanup() {
 	if(_ludstatus != NULL)
-		free(_ludstatus);
+		free((void*)_ludstatus);
 	if(_udaemonlockfd)
 		close(_udaemonlockfd);
 	closelog();
 }
 
-static lud_status* lud_querystatus(void) {
+lud_status* lud_querystatus(void) {
 	return _ludstatus;
 }
 
-static char* lud_strerror(int lud_errno) {
+char* lud_strerror(int lud_errno) {
 	switch(lud_errno) {
 		case EUDNOERR:
 			return "Assumed daemonization success";
