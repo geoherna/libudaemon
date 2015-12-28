@@ -15,7 +15,7 @@ $ make
 That's all there is to it.
 
 ## Example
-```
+```{.c}
 #include <stdio.h>
 #include <stdlib.h>
 #include <udaemon.h>
