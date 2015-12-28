@@ -29,6 +29,10 @@ int main(int argc, char* argv[]) {
 	lud_status* stat = lud_querystatus();
 	syslog(LOG_INFO, "PID: %d PPID: %d SID: %d", stat->pid, stat->ppid, stat->sid);
 
+	for(;;) {
+
+	}
+
 	// Job's done
 	lud_cleanup();
 	return err;

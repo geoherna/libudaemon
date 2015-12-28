@@ -19,6 +19,7 @@ check_include_files("string.h" HAVE_STRING_H)
 check_include_files("syslog.h" HAVE_SYSLOG_H)
 check_include_files("sys/types.h" HAVE_TYPES_H)
 check_include_files("sys/stat.h" HAVE_STAT_H)
+check_include_files("sys/file.h" HAVE_FILE_H)
 
 # check_prototype_exists(openlog "syslog.h" HAVE_OPENLOG)
 # check_prototype_exists(closelog "syslog.h" HAVE_CLOSELOG)

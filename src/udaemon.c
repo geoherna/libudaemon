@@ -13,8 +13,10 @@
 #include <syslog.h>
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/file.h>
 
 static int _udaemonlockfd = 0;
+static int _udaemonlockrc = 0;
 static lud_opt* _dopt = NULL;
 static lud_status* _ludstatus = NULL;
 
@@ -44,8 +46,16 @@ int lud_daemonize(lud_opt* dopt) {
 	if(getppid() == 1) return EUDNOERR;
 	// Lockfile
 	if(_dopt->lockfile && _dopt->lockfile[0]) {
-		_udaemonlockfd = open(_dopt->lockfile, O_RDWR | O_CREAT, 0640);
+		_udaemonlockfd = open(_dopt->lockfile, O_RDWR | O_CREAT, 0666);
 		if(_udaemonlockfd < 0) {
+			if(_dopt->use_syslog) {
+				syslog(LOG_ERR, "Unable to obtain lock on %s! %d (%s)", _dopt->lockfile, errno, strerror(errno));
+				closelog();
+			}
+			return EUDNOLOCK;
+		}
+		_udaemonlockrc = flock(_udaemonlockfd, LOCK_EX | LOCK_NB);
+		if(_udaemonlockrc < 0) {
 			if(_dopt->use_syslog) {
 				syslog(LOG_ERR, "Unable to obtain lock on %s! %d (%s)", _dopt->lockfile, errno, strerror(errno));
 				closelog();
@@ -157,6 +167,7 @@ int lud_daemonize(lud_opt* dopt) {
 
 	// Asphyxiate the parent process
 	kill(parent, SIGTERM);
+	return EUDNOERR;
 }
 
 void lud_cleanup() {
