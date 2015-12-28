@@ -147,7 +147,7 @@ int lud_daemonize(lud_opt* dopt) {
 	_ludstatus = (lud_status*)malloc(sizeof(lud_status));
 
 	_ludstatus->pid = getpid();
-	_ludstatus->sid = getsid();
+	_ludstatus->sid = getsid(_ludstatus->pid);
 	_ludstatus->ppid = getppid();
 
 	// Redirect IO
