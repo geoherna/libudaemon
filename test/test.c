@@ -3,6 +3,7 @@
 */
 #include <stdio.h>
 #include <stdlib.h>
+#include <syslog.h>
 #include <udaemon.h>
 
 int main(int argc, char* argv[]) {
@@ -23,7 +24,10 @@ int main(int argc, char* argv[]) {
 	}
 
 	// DO WORK
-	printf("Rarw! I'm a scawwy daemon!");
+	syslog(LOG_INFO, "Rarw! I'm a scawwy daemon!");
+
+	lud_status* stat = lud_querystatus();
+	syslog(LOG_INFO, "PID: %d PPID: %d SID: %d", stat->pid, stat->ppid, stat->sid);
 
 	// Job's done
 	lud_cleanup();
