@@ -25,10 +25,14 @@ static void _udaemonsighndl(int sig) {
 	switch(sig) {
 		case SIGPIPE:
 		case SIGTERM: {
+			// Ensure that we don't leak
+			lud_cleanup();
 			exit(0);
 		}
 		case SIGALRM:
 		case SIGCHLD: {
+			// No leaks plz
+			lud_cleanup();
 			exit(-1);
 		}
 		default: { }
@@ -112,7 +116,7 @@ int lud_daemonize(lud_opt* dopt) {
 	signal(SIGTSTP, SIG_IGN); /* Various TTY signals */
 	signal(SIGTTOU, SIG_IGN);
 	signal(SIGTTIN, SIG_IGN);
-	signal(SIGTERM, SIG_DFL); /* Die on SIGTERM */
+	signal(SIGHUP,  SIG_IGN);
 
 	// Set the file mask
 	umask(0);
@@ -147,7 +151,9 @@ int lud_daemonize(lud_opt* dopt) {
 			}
 			return EUDNOPID;
 		}
-		char buff[10];
+		char buff[10] = { 0,0,0,0,0,0,0,0,0,0 };
+		// Null out the PID file
+		write(pidfd, buff, strlen(buff));
 		snprintf(buff, sizeof(buff), "%d", getpid());
 		write(pidfd, buff, strlen(buff));
 		close(pidfd);
@@ -171,6 +177,8 @@ int lud_daemonize(lud_opt* dopt) {
 }
 
 void lud_cleanup() {
+	if(_dopt->use_syslog)
+		syslog(LOG_NOTICE, "Cleaning up...");
 	if(_ludstatus != NULL)
 		free((void*)_ludstatus);
 	if(_udaemonlockfd)
@@ -200,7 +208,43 @@ char* lud_strerror(int lud_errno) {
 			return "Unable to change working directory";
 		case EUDNOPID:
 			return "Unable to create PID file";
+		case EUDNOSIG:
+			return "Unable to send signal to daemon (is it running?)";
 		default:
 			return "Unknown Error, shit failed";
 	}
 }
+
+int lud_signaldaemon(int sig, lud_opt* dopt) {
+	if(dopt == NULL) return EUDNOOPT;
+	if(dopt->pidfile && dopt->pidfile[0]) {
+		int pidfd;
+		if((pidfd = open(dopt->pidfile, O_RDWR, 0640)) < 0 ) {
+			if(dopt->use_syslog) {
+				syslog(LOG_ERR, "Unable to open PID file %s! %d (%s)", dopt->pidfile, errno, strerror(errno));
+				closelog();
+			}
+			return EUDNOPID;
+		}
+
+		char buff[10];
+		read(pidfd, buff, sizeof(buff));
+		int pid = atoi(buff);
+		close(pidfd);
+
+		if (kill(pid, sig) < 0) {
+			if(dopt->use_syslog) {
+				syslog(LOG_ERR, "Unable to send signal %d to %d! %d (%s)", sig, pid, errno, strerror(errno));
+				closelog();
+			}
+			return EUDNOSIG;
+		}
+	} else {
+		return EUDNOPID;
+	}
+	return EUDNOERR;
+}
+
+#if defined(LUD_AUTO_DTOR)
+LUD_DTOR();
+#endif /* LUD_AUTO_DTOR */
