@@ -17,7 +17,7 @@ static void sig(int s) {
 int main(int argc, char* argv[]) {
 	// We need options damn it!~
 	lud_opt opts = {
-		true,				// Use syslog
+		1,					// Use syslog
 		"udaemonTest",		// The daemon name
 		"/tmp/udtest.lwk",	// The lock file location
 		"/tmp/udtest.pid",	// The PID file location

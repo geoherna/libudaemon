@@ -12,7 +12,6 @@
 		#define lud_linkage extern
 	#endif /* c */
 
-	#include <stdbool.h>
 
 	#define EUDNOERR	 0
 	#define EUDNOOPT 	-1
@@ -24,19 +23,14 @@
 	#define EUDNOPID	-7
 	#define EUDNOSIG	-8
 
-	#if defined(LUD_AUTO_DTOR)
-		#define LUD_DTOR()					\
-			__attribute__((destructor(101)))\
-			void __lud_dtor_w(void) {		\
-				lud_cleanup();				\
-			}
-	#endif /* LUD_AUTO_DTOR */
+	typedef void (*lud_sighandle)(void);
 
 	/*! \brief libμdaemon configuration
 		This contains all the options for configuring libμdaemon.
 	*/
 	typedef struct daemon_opt {
-		bool use_syslog;		/*!< Use syslog logging for internal log messages */
+		int use_syslog;		/*!< Use syslog logging for internal log messages */
+		// bool builtin_signaling;	/*!< Use the built in signal handling */
 		const char* name;		/*!< The name of the daemon to use for log messages */
 		const char* lockfile;	/*!< The lock file to use (optional) */
 		const char* pidfile;	/*!< The PID file to use (optional) */
@@ -97,4 +91,5 @@
 	*/
 	lud_linkage	int lud_signaldaemon(int sig, lud_opt* dopt);
 
+	// lud_linkage void lud_registersighandle(int sig, lud_sighandle handle);
 #endif /* _udaemon_h_ */

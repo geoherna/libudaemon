@@ -25,26 +25,27 @@ static void _udaemonsighndl(int sig) {
 	switch(sig) {
 		case SIGPIPE:
 		case SIGTERM: {
-			// Ensure that we don't leak
-			lud_cleanup();
+			if(_ludstatus != NULL)
+				free((void*)_ludstatus);
 			exit(0);
 		}
 		case SIGALRM:
 		case SIGCHLD: {
-			// No leaks plz
-			lud_cleanup();
+			if(_ludstatus != NULL)
+				free((void*)_ludstatus);
 			exit(-1);
 		}
 		default: { }
 	}
 }
+
 int lud_daemonize(lud_opt* dopt) {
 	if((_dopt = dopt) == NULL) return EUDNOOPT;
 
 	pid_t pid, sid, parent;
 	int pidfd;
 
-	if(_dopt->use_syslog)
+	if(_dopt->use_syslog == 1)
 		openlog(_dopt->name, LOG_PID, LOG_LOCAL5);
 	// Already Daemonized
 	if(getppid() == 1) return EUDNOERR;
@@ -52,7 +53,7 @@ int lud_daemonize(lud_opt* dopt) {
 	if(_dopt->lockfile && _dopt->lockfile[0]) {
 		_udaemonlockfd = open(_dopt->lockfile, O_RDWR | O_CREAT, 0666);
 		if(_udaemonlockfd < 0) {
-			if(_dopt->use_syslog) {
+			if(_dopt->use_syslog == 1) {
 				syslog(LOG_ERR, "Unable to obtain lock on %s! %d (%s)", _dopt->lockfile, errno, strerror(errno));
 				closelog();
 			}
@@ -60,7 +61,7 @@ int lud_daemonize(lud_opt* dopt) {
 		}
 		_udaemonlockrc = flock(_udaemonlockfd, LOCK_EX | LOCK_NB);
 		if(_udaemonlockrc < 0) {
-			if(_dopt->use_syslog) {
+			if(_dopt->use_syslog == 1) {
 				syslog(LOG_ERR, "Unable to obtain lock on %s! %d (%s)", _dopt->lockfile, errno, strerror(errno));
 				closelog();
 			}
@@ -72,11 +73,11 @@ int lud_daemonize(lud_opt* dopt) {
 		if(getuid() == 0 || geteuid() == 0) {
 			struct passwd* pw = getpwnam(_dopt->user);
 			if(pw) {
-				if(_dopt->use_syslog)
+				if(_dopt->use_syslog == 1)
 					syslog(LOG_NOTICE, "Setting user to %s(%d)", _dopt->user, pw->pw_uid);
 				setuid(pw->pw_uid);
 			} else {
-				if(_dopt->use_syslog) {
+				if(_dopt->use_syslog == 1) {
 					syslog(LOG_ERR, "Unable to switch to user %s! %d (%s)", _dopt->user, errno, strerror(errno));
 					closelog();
 				}
@@ -95,7 +96,7 @@ int lud_daemonize(lud_opt* dopt) {
 	// Fork off~
 	pid = fork();
 	if(pid < 0) {
-		if(_dopt->use_syslog) {
+		if(_dopt->use_syslog == 1) {
 			syslog(LOG_ERR, "Unable to fork process! %d (%s)", errno, strerror(errno));
 			closelog();
 		}
@@ -124,7 +125,7 @@ int lud_daemonize(lud_opt* dopt) {
 	// Attempt to switch sessions
 	sid = setsid();
 	if(sid < 0) {
-		if(_dopt->use_syslog) {
+		if(_dopt->use_syslog == 1) {
 			syslog(LOG_ERR, "Unable to switch session! %d (%s)", errno, strerror(errno));
 			closelog();
 		}
@@ -134,7 +135,7 @@ int lud_daemonize(lud_opt* dopt) {
 	// Switch working directory
 	if(_dopt->wdir && _dopt->wdir[0]) {
 		if(chdir(_dopt->wdir) < 0) {
-			if(_dopt->use_syslog) {
+			if(_dopt->use_syslog == 1) {
 				syslog(LOG_ERR, "Unable to switch working directory to %s! %d (%s)", _dopt->wdir, errno, strerror(errno));
 				closelog();
 			}
@@ -145,7 +146,7 @@ int lud_daemonize(lud_opt* dopt) {
 	// Attempt to create pid file
 	if(_dopt->pidfile && _dopt->pidfile[0]) {
 		if((pidfd = open(_dopt->pidfile, O_CREAT | O_RDWR, 0640)) < 0) {
-			if(_dopt->use_syslog) {
+			if(_dopt->use_syslog == 1) {
 				syslog(LOG_ERR, "Unable to create PID file %s! %d (%s)", _dopt->pidfile, errno, strerror(errno));
 				closelog();
 			}
@@ -173,11 +174,13 @@ int lud_daemonize(lud_opt* dopt) {
 
 	// Asphyxiate the parent process
 	kill(parent, SIGTERM);
+	if(_dopt->use_syslog == 1)
+		syslog(LOG_NOTICE, "Process daemonized to pid %d", _ludstatus->pid);
 	return EUDNOERR;
 }
 
 void lud_cleanup() {
-	if(_dopt->use_syslog)
+	if(_dopt->use_syslog == 1)
 		syslog(LOG_NOTICE, "Cleaning up...");
 	if(_ludstatus != NULL)
 		free((void*)_ludstatus);
@@ -197,7 +200,7 @@ char* lud_strerror(int lud_errno) {
 		case EUDNOOPT:
 			return "No daemon options provided";
 		case EUDNOLOCK:
-			return "Unable to obtain lock";
+			return "Unable to obtain lock (am I already running?)";
 		case EUDNOUSER:
 			return "Unable to switch user";
 		case EUDFORK:
@@ -207,7 +210,7 @@ char* lud_strerror(int lud_errno) {
 		case EUDCHDIR:
 			return "Unable to change working directory";
 		case EUDNOPID:
-			return "Unable to create PID file";
+			return "Unable to poke PID file (is it even set?)";
 		case EUDNOSIG:
 			return "Unable to send signal to daemon (is it running?)";
 		default:
@@ -245,6 +248,6 @@ int lud_signaldaemon(int sig, lud_opt* dopt) {
 	return EUDNOERR;
 }
 
-#if defined(LUD_AUTO_DTOR)
-LUD_DTOR();
-#endif /* LUD_AUTO_DTOR */
+// void lud_registersighandle(int sig, lud_sighandle handle) {
+
+// }

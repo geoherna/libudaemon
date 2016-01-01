@@ -9,7 +9,7 @@ $ git clone https://github.com/xampp/libudaemon.git
 $ cd libudaemon
 $ mkdir build
 $ cd !$ && cmake ../
-$ make
+$ make && sudo make install
 ``` 
 
 That's all there is to it.
