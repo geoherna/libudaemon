@@ -12,8 +12,6 @@ $ cd !$ && cmake ../
 $ make && sudo make install
 ``` 
 
-That's all there is to it.
-
 ## Example
 
 ```{.c}
