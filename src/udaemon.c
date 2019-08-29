@@ -59,6 +59,7 @@ int lud_daemonize(lud_opt *dopt) {
                errno, strerror(errno));
         closelog();
       }
+            
       return EUDNOLOCK;
     }
     _udaemonlockrc = flock(_udaemonlockfd, LOCK_EX | LOCK_NB);
@@ -68,6 +69,7 @@ int lud_daemonize(lud_opt *dopt) {
                errno, strerror(errno));
         closelog();
       }
+            
       return EUDNOLOCK;
     }
   }
@@ -85,6 +87,7 @@ int lud_daemonize(lud_opt *dopt) {
                  errno, strerror(errno));
           closelog();
         }
+              
         return EUDNOUSER;
       }
     }
@@ -105,6 +108,7 @@ int lud_daemonize(lud_opt *dopt) {
              strerror(errno));
       closelog();
     }
+          
     return EUDFORK;
   }
 
@@ -135,6 +139,7 @@ int lud_daemonize(lud_opt *dopt) {
              strerror(errno));
       closelog();
     }
+          
     return EUDSID;
   }
 
@@ -146,6 +151,7 @@ int lud_daemonize(lud_opt *dopt) {
                _dopt->wdir, errno, strerror(errno));
         closelog();
       }
+            
       return EUDCHDIR;
     }
   }
@@ -158,6 +164,7 @@ int lud_daemonize(lud_opt *dopt) {
                errno, strerror(errno));
         closelog();
       }
+            
       return EUDNOPID;
     }
     char buff[10] = {0, 0, 0, 0, 0, 0, 0, 0, 0, 0};
@@ -184,6 +191,7 @@ int lud_daemonize(lud_opt *dopt) {
   kill(parent, SIGTERM);
   if (_dopt->use_syslog == 1)
     syslog(LOG_NOTICE, "Process daemonized to pid %d", _ludstatus->pid);
+        
   return EUDNOERR;
 }
 
@@ -235,6 +243,7 @@ int lud_signaldaemon(int sig, lud_opt *dopt) {
                errno, strerror(errno));
         closelog();
       }
+            
       return EUDNOPID;
     }
 
@@ -254,6 +263,7 @@ int lud_signaldaemon(int sig, lud_opt *dopt) {
   } else {
     return EUDNOPID;
   }
+        
   return EUDNOERR;
 }
 
