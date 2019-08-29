@@ -14,7 +14,7 @@ $ make && sudo make install
 
 ## Example
 
-```{.c}
+```c
 #include <stdio.h>
 #include <stdlib.h>
 #include <syslog.h>
