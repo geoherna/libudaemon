@@ -38,7 +38,7 @@ int main(int argc, char* argv[]) {
 	}
 
 	// DO WORK
-	syslog(LOG_INFO, "Rarw! I'm a scawwy daemon!");
+	syslog(LOG_INFO, "A scary daemon!");
 
 	lud_status* stat = lud_querystatus();
 	syslog(LOG_INFO, "PID: %d PPID: %d SID: %d", stat->pid, stat->ppid, stat->sid);
